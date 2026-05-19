@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useState, useRef, useEffect } from 'react';
 import { route } from 'ziggy-js';
 
-import { buildColumns, Customer } from "./columns";
+import { buildColumns, AdvanceSalary } from "./columns";
 import { DataTable } from "./data-table";
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -20,32 +20,33 @@ import {
 } from "@/components/ui/select";
 
 import { useTranslation } from 'react-i18next';
+import { PlusIcon } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Props {
-    customers: any;
+    advance_salaries: any;
     filters: { search?: string };
+    employees: { id: number; name: string }[];
 }
 
 const EMPTY_FORM = {
-    name: '',
-    phone: '',
-    address: '',
-    other_info: '',
+    employee_id: '',
+    amount: '',
+    request_date: '',
+    reason: '',
     status: '',
 };
 
 const getEmptyForm = () => ({
-    name: '',
-    phone: '',
-    address: '',
-    other_info: '',
+    employee_id: '',
+    amount: '',
+    request_date: '',
+    reason: '',
     status: '',
 });
 
-// ── Component ─────────────────────────────────────────────────────────────────
 
-export default function Index({ customers, filters }: Props) {
+export default function Index({ advance_salaries, filters, employees }: Props) {
 
     const { t } = useTranslation();
 
@@ -55,10 +56,10 @@ export default function Index({ customers, filters }: Props) {
 
     // Modal state
     const [isOpen, setIsOpen] = useState(false);
-    const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+    const [editingAdvanceSalary, setEditingAdvanceSalary] = useState<AdvanceSalary | null>(null);
 
     // Delete state
-    const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
+    const [deletingAdvanceSalary, setDeletingAdvanceSalary] = useState<AdvanceSalary | null>(null);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     // Form state (managed manually — not useForm — because image is a File)
@@ -69,25 +70,38 @@ export default function Index({ customers, filters }: Props) {
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
+    const convertKhmerToArabic = (str: string) => {
+        const khmerDigits = [/០/g, /១/g, /២/g, /៣/g, /៤/g, /៥/g, /៦/g, /៧/g, /៨/g, /៩/g];
+        const arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+
+        let result = str;
+        for (let i = 0; i < 10; i++) {
+            result = result.replace(khmerDigits[i], arabicDigits[i]);
+        }
+
+        // Remove anything that is still not a number or a decimal point
+        return result.replace(/[^0-9.]/g, '');
+    };
+
     const resetForm = () => {
         setForm(getEmptyForm());
     };
 
     const openCreateModal = () => {
-        setEditingCustomer(null);
+        setEditingAdvanceSalary(null);
         resetForm();
-        setForm(f => ({ ...f, status: 'active' }));
+        setForm(f => ({ ...f, status: 'pending' }));
         setIsOpen(true);
     };
 
-    const openEditModal = (customer: Customer) => {
-        setEditingCustomer(customer);
+    const openEditModal = (advance_salary: AdvanceSalary) => {
+        setEditingAdvanceSalary(advance_salary);
         setForm({
-            name: customer.name ?? '',
-            phone: String(customer.phone ?? ''),
-            address: (customer as any).address ?? '',
-            other_info: customer.other_info != null ? String(customer.other_info) : '',
-            status: customer.status,
+            employee_id: advance_salary.employee_id ? String(advance_salary.employee_id) : '',
+            amount: String(advance_salary.amount ?? ''),
+            request_date: advance_salary.request_date ?? '',
+            reason: advance_salary.reason ?? '',
+            status: advance_salary.status,
         });
         setIsOpen(true);
     };
@@ -100,38 +114,38 @@ export default function Index({ customers, filters }: Props) {
         setErrors({});
 
         const fd = new FormData();
-        fd.append('name', form.name);
-        fd.append('phone', form.phone);
-        fd.append('address', form.address);
-        fd.append('other_info', form.other_info);
+        fd.append('employee_id', form.employee_id);
+        fd.append('amount', form.amount);
+        fd.append('request_date', form.request_date);
+        fd.append('reason', form.reason);
         fd.append('status', form.status);
 
-        if (editingCustomer) {
+        if (editingAdvanceSalary) {
             fd.append('_method', 'PUT');
-            router.post(route('customers.update', editingCustomer.id), fd, {
+            router.post(route('advance-salary.update', editingAdvanceSalary.id), fd, {
                 forceFormData: true,
                 onSuccess: () => {
                     setIsOpen(false);
                     resetForm();
-                    toast.success(t('depot.update_success'));
+                    toast.success(t('advance_salary.updated_successfully'));
                 },
                 onError: (errs) => {
                     setErrors(errs as Record<string, string>);
-                    toast.error(t('depot.error_please_try'));
+                    toast.error(t('advance_salary.error_please_try'));
                 },
                 onFinish: () => setProcessing(false),
             });
         } else {
-            router.post(route('customers.store'), fd, {
+            router.post(route('advance-salary.store'), fd, {
                 forceFormData: true,
                 onSuccess: () => {
                     setIsOpen(false);
                     resetForm();
-                    toast.success(t('depot.create_success'));
+                    toast.success(t('advance_salary.created_successfully'));
                 },
                 onError: (errs) => {
                     setErrors(errs as Record<string, string>);
-                    toast.error(t('depot.error_please_try'));
+                    toast.error(t('advance_salary.error_please_try'));
                 },
                 onFinish: () => setProcessing(false),
             });
@@ -140,18 +154,18 @@ export default function Index({ customers, filters }: Props) {
 
     // ── Delete ────────────────────────────────────────────────────────────────
 
-    const handleDelete = (customer: Customer) => {
-        setDeletingCustomer(customer);
+    const handleDelete = (advance_salary: AdvanceSalary) => {
+        setDeletingAdvanceSalary(advance_salary);
         setIsDeleteOpen(true);
     };
 
     const confirmDelete = () => {
-        if (!deletingCustomer) return;
-        router.delete(route('customers.destroy', deletingCustomer.id), {
+        if (!deletingAdvanceSalary) return;
+        router.delete(route('advance-salary.destroy', deletingAdvanceSalary.id), {
             onSuccess: () => {
                 setIsDeleteOpen(false);
-                setDeletingCustomer(null);
-                toast.success(`"${deletingCustomer.name}" deleted successfully!`);
+                setDeletingAdvanceSalary(null);
+                toast.success(t('advance_salary.deleted_successfully'));
             },
             onError: (errors: any) => {
                 if (errors.delete) {
@@ -165,7 +179,7 @@ export default function Index({ customers, filters }: Props) {
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            router.get('/customers', {
+            router.get('/advance-salary', {
                 search: search || undefined,
                 page: 1 // reset ONLY when typing
             }, {
@@ -178,7 +192,7 @@ export default function Index({ customers, filters }: Props) {
     }, [search]);
 
     const applyFilter = () => {
-        router.get('/customers', {
+        router.get('/advance-salary', {
             search: search || undefined,
             page: 1
         }, {
@@ -201,9 +215,11 @@ export default function Index({ customers, filters }: Props) {
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="p-2">
                     <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-2xl font-bold">{t('depot.all_depot')}</h1>
+                        <h1 className="text-2xl font-bold">{t('advance_salary.advance_salary_label')}</h1>
+
                         <Button className="bg-indigo-800 hover:bg-indigo-700" onClick={openCreateModal}>
-                            {t('depot.add_depot')}
+                            <PlusIcon className="size-4" />
+                            {t('advance_salary.new_advance_salary')}
                         </Button>
                     </div>
 
@@ -213,15 +229,15 @@ export default function Index({ customers, filters }: Props) {
                         onKeyDown={(e) => e.key === 'Enter' && applyFilter()}
                     />
 
-                    <DataTable columns={columns} data={customers.data} />
+                    <DataTable columns={columns} data={advance_salaries.data} />
 
                     <div className="flex justify-between items-center mt-4">
                         <div className="text-sm text-gray-500">
-                            Showing {customers.from} to {customers.to} of {customers.total}
+                            Showing {advance_salaries.from} to {advance_salaries.to} of {advance_salaries.total}
                         </div>
 
                         <div className="flex gap-1">
-                            {customers.links.map((link: any, i: number) => (
+                            {advance_salaries.links.map((link: any, i: number) => (
                                 <button
                                     key={i}
                                     onClick={() => {
@@ -250,98 +266,111 @@ export default function Index({ customers, filters }: Props) {
             {/* ── Create / Edit Dialog ─────────────────────────────────────── */}
             <Dialog open={isOpen} onOpenChange={(open) => {
                 setIsOpen(open);
-                if (!open) { setEditingCustomer(null); resetForm(); }
+                if (!open) { setEditingAdvanceSalary(null); resetForm(); }
             }}>
                 <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                     <form onSubmit={submit} encType="multipart/form-data">
                         <DialogHeader className="mb-4">
-                            <DialogTitle>{editingCustomer ? t('depot.edit_depot') : t('depot.add_depot')}</DialogTitle>
+                            <DialogTitle>{editingAdvanceSalary ? t('advance_salary.edit_advance_salary') : t('advance_salary.new_advance_salary')}</DialogTitle>
                             <DialogDescription>
-                                {editingCustomer ? t('depot.edit_description') : t('depot.add_description')}
+                                {editingAdvanceSalary ? t('advance_salary.edit_description') : t('advance_salary.add_description')}
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="space-y-4">
 
-                            {/* Product Name */}
+                            {/* Employee Name */}
                             <div className="space-y-1">
-                                <Label htmlFor="name">{t('depot.name_label')}<span className="text-red-500">*</span></Label>
-                                <Input
-                                    id="name"
-                                    value={form.name}
-                                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                                    placeholder="e.g. Vanilla Ice Cream"
-                                />
-                                {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
+                                <Label htmlFor="name">{t('advance_salary.employee_name')}<span className="text-red-500">*</span></Label>
+                                <Select
+                                    value={form.employee_id}
+                                    onValueChange={(value) => setForm(f => ({ ...f, employee_id: value }))}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder={t('advance_salary.select_employee')} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {employees?.map((employee) => (
+                                            <SelectItem key={employee.id} value={String(employee.id)}>
+                                                {employee.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {errors.employee_id && <p className="text-red-500 text-xs">{errors.employee_id}</p>}
                             </div>
 
 
-                            {/* Phone */}
+                            {/* Amount */}
                             <div className="space-y-1">
-                                <Label htmlFor="phone">{t('depot.phone_label')}<span className="text-red-500">*</span></Label>
+                                <Label htmlFor="amount">{t('advance_salary.amount')}<span className="text-red-500">*</span></Label>
                                 <Input
-                                    id="phone"
+                                    id="amount"
                                     type="text"
-                                    value={form.phone}
-                                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                                    placeholder="e.g. 012345678"
+                                    value={form.amount}
+                                    onChange={e => {
+                                        const cleanedValue = convertKhmerToArabic(e.target.value);
+                                        setForm(f => ({ ...f, amount: cleanedValue }));
+                                    }}
+                                    className="font-sans"
                                 />
-                                {errors.phone && <p className="text-red-500 text-xs">{errors.phone}</p>}
+                                {errors.amount && <p className="text-red-500 text-xs">{errors.amount}</p>}
                             </div>
 
-                            {/* Address row */}
+                            {/* request date */}
                             <div className="space-y-1">
                                 <div className="space-y-1">
-                                    <Label htmlFor="address">{t('depot.address_label')}</Label>
+                                    <Label htmlFor="request_date">{t('advance_salary.request_date')}</Label>
                                     <Input
-                                        id="address"
-                                        name="address"
-                                        type="text"
-                                        value={form.address}
-                                        onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                                        id="request_date"
+                                        type="date"
+                                        value={form.request_date}
+                                        onChange={e => setForm(f => ({ ...f, request_date: e.target.value }))}
                                     />
-
+                                    {errors.request_date && <p className="text-red-500 text-xs">{errors.request_date}</p>}
                                 </div>
                             </div>
 
-                            {/* Other info */}
+                            {/* Reason */}
                             <div className="space-y-1">
                                 <div className="space-y-1">
-                                    <Label htmlFor="other_info">{t('depot.other_info')}</Label>
+                                    <Label htmlFor="reason">{t('advance_salary.reason')}</Label>
                                     <Input
-                                        id="other_info"
-                                        name="other_info"
+                                        id="reason"
                                         type="text"
-                                        value={form.other_info}
-                                        onChange={e => setForm(f => ({ ...f, other_info: e.target.value }))}
+                                        value={form.reason}
+                                        onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
+                                        placeholder="e.g. For family needs"
                                     />
+                                    {errors.reason && <p className="text-red-500 text-xs">{errors.reason}</p>}
                                 </div>
                             </div>
 
-                            {/* Product Status */}
+
+                            {/* Status */}
                             <div className="space-y-1">
-                                <Label>{t('depot.status_label')} <span className="text-red-500">*</span></Label>
+                                <Label>{t('advance_salary.status_label')} <span className="text-red-500">*</span></Label>
                                 <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select a status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="active">{t('depot.status.active')}</SelectItem>
-                                        <SelectItem value="inactive">{t('depot.status.inactive')}</SelectItem>
+                                        <SelectItem value="pending">{t('advance_salary.status.pending')}</SelectItem>
+                                        <SelectItem value="approved">{t('advance_salary.status.approved')}</SelectItem>
+                                        <SelectItem value="rejected">{t('advance_salary.status.rejected')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 {errors.status && <p className="text-red-500 text-xs">{errors.status}</p>}
                             </div>
 
-
                         </div>
 
                         <DialogFooter className="mt-6">
                             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-                                {t('depot.cancel')}
+                                {t('advance_salary.cancel')}
                             </Button>
                             <Button type="submit" disabled={processing} className="bg-indigo-800 hover:bg-indigo-700">
-                                {processing ? t('depot.save_processing') : (editingCustomer ? t('depot.update') : t('depot.create'))}
+                                {processing ? t('advance_salary.save_processing') : (editingAdvanceSalary ? t('advance_salary.update') : t('advance_salary.create'))}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -352,19 +381,19 @@ export default function Index({ customers, filters }: Props) {
             <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('depot.delete')}?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('advance_salary.delete_title')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            {t('depot.delete_description')} {' '}
-                            <span className="font-semibold text-foreground">"{deletingCustomer?.name}"</span>{' '}
+                            {t('advance_salary.delete_description')} {' '}
+                            <span className="font-semibold text-foreground">"{deletingAdvanceSalary?.employee_name}"</span>{' '}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setDeletingCustomer(null)}>{t('depot.cancel')}</AlertDialogCancel>
+                        <AlertDialogCancel onClick={() => setDeletingAdvanceSalary(null)}>{t('advance_salary.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             onClick={confirmDelete}
                         >
-                            {t('depot.delete')}
+                            {t('advance_salary.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -375,6 +404,6 @@ export default function Index({ customers, filters }: Props) {
 
 Index.layout = {
     breadcrumbs: [
-        { title: ('depot.depot_label'), href: '/customers' },
+        { title: ('advance_salary.title'), href: '/advance_salary' },
     ],
 };

@@ -177,7 +177,7 @@ export default function History({ orders, filters, settings, grandTotal, company
         }),
         columnHelper.accessor('customer.name', {
             header: t('sales.customer'),
-            cell: info => info.getValue() || 'Walk-in Customer',
+            cell: info => info.getValue() || t('pos.all'),
         }),
         columnHelper.accessor('order_date', {
             header: t('sales.date'),
@@ -185,41 +185,34 @@ export default function History({ orders, filters, settings, grandTotal, company
         }),
         columnHelper.accessor('sub_total', {
             header: t('sales.sub_total'),
-            cell: info => <span>{currency}{formatMoney(info.getValue())}</span>,
+            cell: info => <span>{currency}{Number(info.getValue() || 0).toFixed(2)}</span>,
         }),
         columnHelper.accessor('tax_amount', {
             header: t('sales.tax'),
-            cell: info => <span>{currency}{formatMoney(info.getValue())}</span>,
+            cell: info => <span>{currency}{Number(info.getValue() || 0).toFixed(2)}</span>,
         }),
         columnHelper.accessor('discount_amount', {
             header: t('sales.discount'),
             cell: info => {
                 const val = Number(info.getValue() || 0);
-                return <span className={val > 0 ? 'text-red-500 font-medium' : ''}>{currency}{formatMoney(val)}</span>;
+                return <span className={val > 0 ? 'text-red-500 font-medium' : ''}>{currency}{val.toFixed(2)}</span>;
             },
         }),
         columnHelper.accessor('transport_fee', {
             header: t('sales.transport_fee'),
-            cell: info => <span>{currency}{formatMoney(info.getValue())}</span>,
+            cell: info => <span>{currency}{Number(info.getValue() || 0).toFixed(2)}</span>,
         }),
         columnHelper.accessor('total_amount', {
-            header: t('sales.total'),
-            cell: info => <span className="font-bold text-indigo-700">{currency}{formatMoney(info.getValue())}</span>,
+            header: t('sales.total_amount'),
+            cell: info => <span className="font-bold text-indigo-700">{currency}{Number(info.getValue() || 0).toFixed(2)}</span>,
         }),
         columnHelper.accessor('paid_amount', {
             header: t('sales.paid_amount'),
-            cell: info => <span className="font-bold text-green-700">{currency}{formatMoney(info.getValue())}</span>,
+            cell: info => <span className="font-bold text-green-700">{currency}{Number(info.getValue() || 0).toFixed(2)}</span>,
         }),
         columnHelper.accessor('payment_method', {
             header: t('sales.method'),
-            cell: info => {
-                const method = info.getValue();
-                return (
-                    <Badge variant="outline" className="uppercase">
-                        {t(`sales.payment_method.${method}`)}
-                    </Badge>
-                );
-            }
+            cell: info => <Badge variant="outline" className="uppercase">{info.getValue() === 'cash' ? t('sales.payment_method.cash') : info.getValue() === 'aba' ? t('sales.payment_method.aba') : t('sales.payment_method.wing')}</Badge>,
         }),
         columnHelper.accessor('payment_status', {
             header: t('sales.status'),
@@ -303,7 +296,7 @@ export default function History({ orders, filters, settings, grandTotal, company
 
     return (
         <>
-            <Head title="Sales History" />
+            <Head title={t('sales.sale_list')} />
 
             <div className="flex flex-col gap-4 p-6 w-full overflow-hidden">
                 <div className="flex flex-col md:flex-row gap-4 items-end bg-white p-4 rounded-xl border border-gray-200">
@@ -333,11 +326,11 @@ export default function History({ orders, filters, settings, grandTotal, company
                     {preset === 'custom' && (
                         <>
                             <div className="flex flex-col gap-1 w-full md:w-40">
-                                <label className="text-xs font-bold text-gray-500 uppercase">From Date</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase">{t('expense.date_preset.from_date')}</label>
                                 <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} />
                             </div>
                             <div className="flex flex-col gap-1 w-full md:w-40">
-                                <label className="text-xs font-bold text-gray-500 uppercase">To Date</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase">{t('expense.date_preset.to_date')}</label>
                                 <Input type="date" value={toDate} onChange={e => setToDate(e.target.value)} />
                             </div>
                         </>
@@ -430,7 +423,7 @@ export default function History({ orders, filters, settings, grandTotal, company
             <Dialog open={!!viewOrder} onOpenChange={(open) => !open && setViewOrder(null)}>
                 <DialogContent className="max-w-md bg-[#f1f5f9] p-0 font-sans border-none shadow-2xl overflow-hidden rounded-xl">
                     <div className="flex justify-between items-center p-4">
-                        {/* <h2 className="text-gray-800 font-bold text-sm bg-transparent">{t('sales.invoice')}</h2> */}
+                        <h2 className="text-gray-800 font-bold text-sm bg-transparent">{t('sales.invoice')}</h2>
                     </div>
 
                     {viewOrder && (
@@ -491,24 +484,24 @@ export default function History({ orders, filters, settings, grandTotal, company
                                     {Number(viewOrder.tax_amount) > 0 && (
                                         <div className="flex justify-between">
                                             <span>{t('sales.tax')}</span>
-                                            <span className="font-bold text-gray-800">+{currency}{formatMoney(viewOrder.tax_amount)}</span>
+                                            <span className="font-bold text-gray-800">+{currency}{Number(viewOrder.tax_amount).toFixed(2)}</span>
                                         </div>
                                     )}
                                     {Number(viewOrder.discount_amount) > 0 && (
                                         <div className="flex justify-between">
                                             <span>{t('sales.discount')}</span>
-                                            <span className="font-bold text-red-500">-{currency}{formatMoney(viewOrder.discount_amount)}</span>
+                                            <span className="font-bold text-red-500">-{currency}{Number(viewOrder.discount_amount).toFixed(2)}</span>
                                         </div>
                                     )}
                                     {Number(viewOrder.transport_fee) > 0 && (
                                         <div className="flex justify-between">
                                             <span>{t('sales.transport_fee')}</span>
-                                            <span className="font-bold text-gray-800">+{currency}{formatMoney(viewOrder.transport_fee)}</span>
+                                            <span className="font-bold text-gray-800">+{currency}{Number(viewOrder.transport_fee).toFixed(2)}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between border-t-2 border-gray-800 pt-2 mt-2">
-                                        <span className="font-bold text-lg text-gray-800">{t('sales.total_amount')}</span>
-                                        <span className="font-bold text-xl text-blue-700">{currency}{formatMoney(viewOrder.total_amount)}</span>
+                                        <span className="font-bold text-lg text-gray-800">{t('sales.total')}</span>
+                                        <span className="font-bold text-xl text-blue-700">{currency}{Number(viewOrder.total_amount).toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -573,7 +566,7 @@ export default function History({ orders, filters, settings, grandTotal, company
                                 />
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">{t('sales.customer')}</label>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase">{t('sales.method')}</label>
                                 <select
                                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 font-sans text-sm outline-none"
                                     value={editFormData.customer_id}
@@ -631,7 +624,7 @@ export default function History({ orders, filters, settings, grandTotal, company
                                     {isSaving ? t('sales.save_processing') : t('sales.save_changes')}
                                 </Button>
                                 <DialogClose asChild>
-                                    <Button variant="outline">{t('sales.close')}</Button>
+                                    <Button variant="outline">{t('sales.cancel')}</Button>
                                 </DialogClose>
                             </div>
                         </div>
@@ -671,7 +664,7 @@ export default function History({ orders, filters, settings, grandTotal, company
 History.layout = {
     breadcrumbs: [
         {
-            title: 'sales.sale_list',
+            title: 'Sales History',
             href: '/sales-history',
         }
     ]

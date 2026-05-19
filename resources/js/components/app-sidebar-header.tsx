@@ -20,7 +20,7 @@ export function AppSidebarHeader({
 
     const { i18n, t } = useTranslation();
 
-    const [language, setLanguage] = useState('en');
+    const [language, setLanguage] = useState(i18n.language || 'en');
 
     const handleLanguageChange = (value) => {
         setLanguage(value);
@@ -36,7 +36,7 @@ export function AppSidebarHeader({
             </div>
 
             <div className="flex items-center gap-4">
-                <Select defaultValue="kh" onValueChange={handleLanguageChange}>
+                <Select value={language} onValueChange={handleLanguageChange}>
                     <SelectTrigger className="h-9 w-[140px] border-slate-200 text-xs font-medium">
                         <SelectValue placeholder="Language" />
                     </SelectTrigger>

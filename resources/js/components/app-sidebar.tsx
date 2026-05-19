@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from '@inertiajs/react';
-import { BadgeDollarSign, LayoutGrid, Package, ClipboardCheck, Layers2, Users, UserPlus, Users2, Settings, BugPlay, BugPlayIcon, PaintRoller, FileText, Shield, PackageSearch, ShoppingCart, LockKeyhole, DatabaseBackup, FolderClock } from 'lucide-react';
+import { BadgeDollarSign, LayoutGrid, Package, ClipboardCheck, Layers2, Users, UserPlus, Users2, Settings, BugPlay, BugPlayIcon, PaintRoller, FileText, Shield, PackageSearch, ShoppingCart, LockKeyhole, DatabaseBackup, FolderClock, HandCoins, Banknote } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import {
@@ -117,6 +117,17 @@ export function AppSidebar() {
             href: '/employees',
             icon: Users2,
             permission: "employees.view",
+        },
+        {
+            title: t('sidebar.advance_salary'),
+            href: '/advance-salary',
+            icon: HandCoins
+        },
+        {
+            title: t('sidebar.payslips'),
+            href: '/payslips',
+            icon: Banknote,
+            // permission: "payslips.view", // Temporarily removed to ensure visibility
         },
         {
             title: t('sidebar.users'),

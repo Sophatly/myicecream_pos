@@ -20,6 +20,8 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\AccountReceivableController;
+use App\Http\Controllers\Admin\AdvanceSalaryController;
+use App\Http\Controllers\Admin\PaySlipController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 
@@ -43,6 +45,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('income-statement/export', [IncomeStatementController::class, 'export'])->name('income.statement.export');
     Route::get('sales-history/export', [SaleDetailController::class, 'export'])->name('sales.history.export');
     Route::get('employees/export', [EmployeeController::class, 'export'])->name('employees.export');
+    Route::get('payslips/export', [PaySlipController::class, 'export'])->name('payslips.export');
 
     Route::resources([
         'categories'    => CategoryController::class,
@@ -53,7 +56,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'purchase-item' => PurchaseItemController::class,
         'purchase'      => PurchaseController::class,
         'expense'       => ExpenseController::class,
+        'advance-salary'=> AdvanceSalaryController::class,
+        'payslips'      => PaySlipController::class,
     ]);
+
+
 
    // Sales & Receipts
     Route::get('sales/receipt/{id}', [ReceiptController::class, 'receipt'])->name('sales.receipt');
